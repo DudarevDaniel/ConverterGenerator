@@ -6,7 +6,6 @@ import com.intellij.openapi.actionSystem.LangDataKeys;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.ui.ComboBox;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
@@ -15,8 +14,6 @@ import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.codeStyle.JavaCodeStyleManager;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.search.PsiShortNamesCache;
 import com.intellij.psi.util.PsiTreeUtil;
 
 
@@ -31,14 +28,8 @@ public class GenerateConverterAction extends AnAction {
         GenerateConverterDialog generateConverterDialog = new GenerateConverterDialog(psiClass);
         generateConverterDialog.show();
         if (generateConverterDialog.isOK()) {
-            ComboBox convertToComboBox = generateConverterDialog.getConvertToComboBox();
-            ComboBox convertFromComboBox = generateConverterDialog.getConvertFromComboBox();
-            String convertToName = (String) convertToComboBox.getEditor().getItem();
-            String convertFromName = (String) convertFromComboBox.getEditor().getItem();
-            PsiClass[] classesTo = PsiShortNamesCache.getInstance(psiClass.getProject()).getClassesByName(convertToName, GlobalSearchScope.projectScope(psiClass.getProject()));
-            PsiClass[] classesFrom = PsiShortNamesCache.getInstance(psiClass.getProject()).getClassesByName(convertFromName, GlobalSearchScope.projectScope(psiClass.getProject()));
-            PsiClass classTo = classesTo[0];
-            PsiClass classFrom = classesFrom[0];
+            PsiClass classTo = generateConverterDialog.getConvertToClass();
+            PsiClass classFrom = generateConverterDialog.getConvertFromClass();
             generateConvertAs(classTo, classFrom, psiClass);
         }
     }
