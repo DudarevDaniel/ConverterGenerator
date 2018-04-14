@@ -13,8 +13,17 @@ import com.intellij.psi.PsiElementFactory;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiType;
+import com.intellij.psi.codeStyle.CodeStyleSettings;
+import com.intellij.psi.codeStyle.CommonCodeStyleSettings;
 import com.intellij.psi.codeStyle.JavaCodeStyleManager;
 import com.intellij.psi.util.PsiTreeUtil;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class GenerateConverterAction extends AnAction {
@@ -63,29 +72,75 @@ public class GenerateConverterAction extends AnAction {
     }
 
     private void buildConvertMethod(PsiClass to, PsiClass from, PsiClass psiClass) {
-        StringBuilder builder = new StringBuilder("public ");
-        builder.append(to.getQualifiedName());
-        builder.append(" convertAs(");
-        builder.append(from.getQualifiedName());
-        builder.append(" from) {\n");
-        builder.append(to.getQualifiedName()).append(" to = new ").append(to.getQualifiedName()).append("();\n");
+        StringBuilder builder = buildMethodSignature(to, from);
+
+        Map<PsiMethod, PsiMethod> mappedFields = new HashMap<>();
+        List<String> notMappedToFields = new ArrayList<>();
+        List<String> notMappedFromFields = new ArrayList<>();
 
         PsiField[] toFields = to.getFields();
         for (PsiField toField : toFields) {
             String toFieldName = toField.getName();
-            PsiMethod toSetter = findSetter(to, toFieldName);
-            PsiMethod fromGetter = findGetter(from, toFieldName);
-            if (toSetter != null && fromGetter != null) {
-                builder.append("to.").append(toSetter.getName()).append("(from.")
-                        .append(fromGetter.getName()).append("());\n");
+            if (toFieldName != null) {
+                PsiMethod toSetter = findSetter(to, toFieldName);
+                PsiMethod fromGetter = findGetter(from, toFieldName);
+                if (toSetter != null && fromGetter != null && isMatchingFieldType(toField, fromGetter)) {
+                    mappedFields.put(toSetter, fromGetter);
+                } else {
+                    notMappedToFields.add(toFieldName);
+                }
             }
         }
+
+        PsiField[] fromFields = from.getFields();
+        for (PsiField fromField : fromFields) {
+            String fromFieldName = fromField.getName();
+            if (fromFieldName != null) {
+                PsiMethod fromGetter = findGetter(from, fromFieldName);
+                if (fromGetter == null || !mappedFields.containsValue(fromGetter)) {
+                    notMappedFromFields.add(fromFieldName);
+                }
+            }
+        }
+
+        for (PsiMethod toSetter : mappedFields.keySet()) {
+            builder.append("to.").append(toSetter.getName()).append("(from.")
+                    .append(mappedFields.get(toSetter).getName()).append("());\n");
+        }
+
+        String indentation = getProjectIndentation(psiClass);
+        builder.append(writeNotMappedFields(notMappedToFields, indentation, "TO"));
+        builder.append(writeNotMappedFields(notMappedFromFields, indentation, "FROM"));
+
         builder.append("return to;\n}");
 
         PsiElementFactory elementFactory = JavaPsiFacade.getElementFactory(psiClass.getProject());
         PsiMethod convertAs = elementFactory.createMethodFromText(builder.toString(), psiClass);
         PsiElement method = psiClass.add(convertAs);
         JavaCodeStyleManager.getInstance(psiClass.getProject()).shortenClassReferences(method);
+    }
+
+    @NotNull
+    private StringBuilder buildMethodSignature(PsiClass to, PsiClass from) {
+        StringBuilder builder = new StringBuilder("public ");
+        builder.append(to.getQualifiedName());
+        builder.append(" convertAs(");
+        builder.append(from.getQualifiedName());
+        builder.append(" from) {\n");
+        builder.append(to.getQualifiedName()).append(" to = new ").append(to.getQualifiedName()).append("();\n");
+        return builder;
+    }
+
+    @NotNull
+    private String writeNotMappedFields(List<String> notMappedFields, String indentation, String sourceType) {
+        StringBuilder builder = new StringBuilder();
+        if (!notMappedFields.isEmpty()) {
+            builder.append("\n").append(indentation).append("// Not mapped ").append(sourceType).append(" fields: \n");
+        }
+        for (String notMappedField : notMappedFields) {
+            builder.append(indentation).append("// ").append(notMappedField).append("\n");
+        }
+        return builder.toString();
     }
 
     private PsiMethod findSetter(PsiClass psiClass, String fieldName) {
@@ -107,6 +162,25 @@ public class GenerateConverterAction extends AnAction {
             return getters[0];
         }
         return null;
+    }
+
+    private String getProjectIndentation(PsiClass psiClass) {
+        CommonCodeStyleSettings.IndentOptions indentOptions = CodeStyleSettings.IndentOptions.retrieveFromAssociatedDocument(psiClass.getContainingFile());
+        String indentation = "        ";
+        if (indentOptions != null) {
+            if (indentOptions.USE_TAB_CHARACTER) {
+                indentation = "\t\t";
+            } else {
+                indentation = new String(new char[2 * indentOptions.INDENT_SIZE]).replace("\0", " ");
+            }
+        }
+        return indentation;
+    }
+
+    private boolean isMatchingFieldType(PsiField toField, PsiMethod fromGetter) {
+        PsiType fromGetterReturnType = fromGetter.getReturnType();
+        PsiType toFieldType = toField.getType();
+        return fromGetterReturnType != null && toFieldType.isAssignableFrom(fromGetterReturnType);
     }
 
 }

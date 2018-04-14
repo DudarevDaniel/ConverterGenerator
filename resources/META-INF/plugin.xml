@@ -31,7 +31,7 @@
   <actions>
     <!-- Add your actions here -->
     <action id="ConverterGenerator.Dudariev" class="org.dudariev.converter.generator.GenerateConverterAction"
-            text="Converter generator"
+            text="Generate converter method"
             description="Generates method for converting the instance of one class to another">
       <add-to-group group-id="JavaGenerateGroup1" anchor="after"
                     relative-to-action="Actions.ActionsPlugin.GenerateToString"/>
