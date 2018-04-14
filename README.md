@@ -1,5 +1,5 @@
-# ConverterGenerator 1.0.0
-==========================
+ConverterGenerator 1.0.0
+--------------------------
 
 Custom plugin for Intellij Idea for generating converter method by matching setters and getters of given classes.
 Plugin generates the converter method (code) for you in your class.
@@ -7,7 +7,7 @@ Plugin generates the converter method (code) for you in your class.
 Installation
 ------------
 Using Intellij Idea built-in system:
-  Preferences/Plugins/Browse repositories.../Search for "converter generator"/Install Plugin/Restart IDE.
+  - Preferences/Plugins/Browse repositories.../Search for "converter generator"/Install Plugin/Restart IDE.
 
 Usage
 ------------
@@ -17,7 +17,8 @@ Usage
 4. Plugin also writes in comments list of fields, that were not mapped (appropriate setter or getter is missing or different types).
 
 Example of the result:
-    `public Dto convertAs(Entity from) {
+
+     public Dto convertAs(Entity from) {
          Dto to = new Dto();
          to.setName(from.getName());
          to.setAge(from.getAge());
@@ -29,4 +30,5 @@ Example of the result:
          // id
          // preferredLanguage
          return to;
-     }`
+     } 
+
