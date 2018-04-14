@@ -4,6 +4,7 @@ import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.openapi.fileEditor.impl.EditorHistoryManager;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.LabeledComponent;
+import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.search.FileTypeIndex;
@@ -44,10 +45,20 @@ public class GenerateConverterDialog extends DialogWrapper {
         LabeledComponent<TextFieldWithAutoCompletion> convertToComponent = LabeledComponent.create(toField, "Convert to class");
         LabeledComponent<TextFieldWithAutoCompletion> convertFromComponent = LabeledComponent.create(fromField, "Convert from class");
 
-        dialog.add(convertToComponent, BorderLayout.NORTH);
-        dialog.add(convertFromComponent, BorderLayout.SOUTH);
+        dialog.add(convertToComponent, BorderLayout.PAGE_START);
+        dialog.add(convertFromComponent, BorderLayout.PAGE_END);
 
         init();
+    }
+
+    @Nullable
+    @Override
+    protected ValidationInfo doValidate() {
+        ValidationInfo toFieldValidation = validateTextField(toField, "Target");
+        if (toFieldValidation == null) {
+            return validateTextField(fromField, "From");
+        }
+        return toFieldValidation;
     }
 
     @Nullable
@@ -61,6 +72,7 @@ public class GenerateConverterDialog extends DialogWrapper {
         JPanel dialog = new JPanel(new BorderLayout());
         dialog.setPreferredSize(JBUI.size(WIDTH, HEIGHT));
         dialog.setMinimumSize(JBUI.size(WIDTH, HEIGHT));
+        dialog.setMaximumSize(JBUI.size(WIDTH + 100, HEIGHT + 20));
         return dialog;
     }
 
@@ -107,5 +119,17 @@ public class GenerateConverterDialog extends DialogWrapper {
             throw new IllegalArgumentException("No such class found: " + className);
         }
         return resolvedClasses[0];
+    }
+
+    private ValidationInfo validateTextField(TextFieldWithAutoCompletion<String> textField, String fieldName) {
+        String className = textField.getText();
+        if (className.isEmpty()) {
+            return new ValidationInfo(String.format("%s class should be selected", fieldName), textField);
+        }
+        PsiClass[] resolvedClasses = PsiShortNamesCache.getInstance(psiClass.getProject()).getClassesByName(className, GlobalSearchScope.projectScope(psiClass.getProject()));
+        if (resolvedClasses.length == 0) {
+            return new ValidationInfo(String.format("Failed to find a class %s in the current project", className), textField);
+        }
+        return null;
     }
 }
