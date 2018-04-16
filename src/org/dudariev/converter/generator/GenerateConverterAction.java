@@ -1,5 +1,6 @@
 package org.dudariev.converter.generator;
 
+import com.intellij.lang.jvm.JvmModifier;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.LangDataKeys;
@@ -91,7 +92,7 @@ public class GenerateConverterAction extends AnAction {
     private void processToFields(PsiClass to, PsiClass from, FieldsMappingResult mappingResult) {
         for (PsiField toField : to.getFields()) {
             String toFieldName = toField.getName();
-            if (toFieldName != null) {
+            if (toFieldName != null && !toField.hasModifier(JvmModifier.STATIC)) {
                 PsiMethod toSetter = findSetter(to, toFieldName);
                 PsiMethod fromGetter = findGetter(from, toFieldName);
                 if (toSetter != null && fromGetter != null && isMatchingFieldType(toField, fromGetter)) {
@@ -106,7 +107,7 @@ public class GenerateConverterAction extends AnAction {
     private void processFromFields(PsiClass from, FieldsMappingResult mappingResult) {
         for (PsiField fromField : from.getFields()) {
             String fromFieldName = fromField.getName();
-            if (fromFieldName != null) {
+            if (fromFieldName != null && !fromField.hasModifier(JvmModifier.STATIC)) {
                 PsiMethod fromGetter = findGetter(from, fromFieldName);
                 if (fromGetter == null || !mappingResult.getMappedFields().containsValue(fromGetter)) {
                     mappingResult.addNotMappedFromField(fromFieldName);
