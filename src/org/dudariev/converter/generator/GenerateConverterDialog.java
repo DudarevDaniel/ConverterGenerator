@@ -42,8 +42,8 @@ public class GenerateConverterDialog extends DialogWrapper {
         this.toField = createTextField(classNamesForAutocompletion);
         this.fromField = createTextField(classNamesForAutocompletion);
 
-        LabeledComponent<TextFieldWithAutoCompletion> convertToComponent = LabeledComponent.create(toField, "Convert to class");
-        LabeledComponent<TextFieldWithAutoCompletion> convertFromComponent = LabeledComponent.create(fromField, "Convert from class");
+        LabeledComponent<TextFieldWithAutoCompletion> convertToComponent = LabeledComponent.create(toField, "Convert To class");
+        LabeledComponent<TextFieldWithAutoCompletion> convertFromComponent = LabeledComponent.create(fromField, "Convert From class");
 
         dialog.add(convertToComponent, BorderLayout.PAGE_START);
         dialog.add(convertFromComponent, BorderLayout.PAGE_END);
