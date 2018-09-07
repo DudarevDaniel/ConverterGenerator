@@ -37,7 +37,7 @@ public class GenerateConverterAction extends AnAction {
         if (generateConverterDialog.isOK()) {
             PsiClass classTo = generateConverterDialog.getConvertToClass();
             PsiClass classFrom = generateConverterDialog.getConvertFromClass();
-            generateConvertAs(classTo, classFrom, psiClass);
+            generateConvertAs(classTo, classFrom, psiClass, generateConverterDialog.isInheritFields());
         }
     }
 
@@ -58,23 +58,23 @@ public class GenerateConverterAction extends AnAction {
         return PsiTreeUtil.getParentOfType(elementAt, PsiClass.class);
     }
 
-    private void generateConvertAs(PsiClass to, PsiClass from, PsiClass psiClass) {
+    private void generateConvertAs(PsiClass to, PsiClass from, PsiClass psiClass, boolean useInherited) {
         new WriteCommandAction.Simple(psiClass.getProject(), psiClass.getContainingFile()) {
 
             @Override
             protected void run() {
-                buildConvertMethod(to, from, psiClass);
+                buildConvertMethod(to, from, psiClass, useInherited);
             }
 
         }.execute();
     }
 
-    private void buildConvertMethod(PsiClass to, PsiClass from, PsiClass psiClass) {
+    private void buildConvertMethod(PsiClass to, PsiClass from, PsiClass psiClass, boolean useInherited) {
         StringBuilder builder = buildMethodSignature(to, from);
 
         FieldsMappingResult mappingResult = new FieldsMappingResult();
-        processToFields(to, from, mappingResult);
-        processFromFields(from, mappingResult);
+        processToFields(to, from, mappingResult, useInherited);
+        processFromFields(from, mappingResult, useInherited);
 
         String indentation = getProjectIndentation(psiClass);
         builder.append(writeMappedFields(mappingResult));
@@ -89,12 +89,12 @@ public class GenerateConverterAction extends AnAction {
         JavaCodeStyleManager.getInstance(psiClass.getProject()).shortenClassReferences(method);
     }
 
-    private void processToFields(PsiClass to, PsiClass from, FieldsMappingResult mappingResult) {
-        for (PsiField toField : to.getFields()) {
+    private void processToFields(PsiClass to, PsiClass from, FieldsMappingResult mappingResult, boolean useInherited) {
+        for (PsiField toField : getFields(to, useInherited)) {
             String toFieldName = toField.getName();
             if (toFieldName != null && !toField.hasModifier(JvmModifier.STATIC)) {
-                PsiMethod toSetter = findSetter(to, toFieldName);
-                PsiMethod fromGetter = findGetter(from, toFieldName);
+                PsiMethod toSetter = findSetter(to, toFieldName, useInherited);
+                PsiMethod fromGetter = findGetter(from, toFieldName, useInherited);
                 if (toSetter != null && fromGetter != null && isMatchingFieldType(toField, fromGetter)) {
                     mappingResult.addMappedField(toSetter, fromGetter);
                 } else {
@@ -104,16 +104,27 @@ public class GenerateConverterAction extends AnAction {
         }
     }
 
-    private void processFromFields(PsiClass from, FieldsMappingResult mappingResult) {
-        for (PsiField fromField : from.getFields()) {
+    private void processFromFields(PsiClass from, FieldsMappingResult mappingResult, boolean useInherited) {
+        for (PsiField fromField : getFields(from, useInherited)) {
             String fromFieldName = fromField.getName();
             if (fromFieldName != null && !fromField.hasModifier(JvmModifier.STATIC)) {
-                PsiMethod fromGetter = findGetter(from, fromFieldName);
+                PsiMethod fromGetter = findGetter(from, fromFieldName, useInherited);
                 if (fromGetter == null || !mappingResult.getMappedFields().containsValue(fromGetter)) {
                     mappingResult.addNotMappedFromField(fromFieldName);
                 }
             }
         }
+    }
+
+    @NotNull
+    private PsiField[] getFields(PsiClass clazz, boolean useInherited) {
+        PsiField[] fields;
+        if (useInherited) {
+            fields = clazz.getAllFields();
+        } else {
+            fields = clazz.getFields();
+        }
+        return fields;
     }
 
     @NotNull
@@ -149,17 +160,17 @@ public class GenerateConverterAction extends AnAction {
         return builder.toString();
     }
 
-    private PsiMethod findSetter(PsiClass psiClass, String fieldName) {
-        PsiMethod[] setters = psiClass.findMethodsByName("set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1), false);
+    private PsiMethod findSetter(PsiClass psiClass, String fieldName, boolean useInherited) {
+        PsiMethod[] setters = psiClass.findMethodsByName("set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1), useInherited);
         if (setters.length == 1) {
             return setters[0];
         }
         return null;
     }
 
-    private PsiMethod findGetter(PsiClass psiClass, String fieldName) {
+    private PsiMethod findGetter(PsiClass psiClass, String fieldName, boolean useInherited) {
         String methodSuffix = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-        PsiMethod[] getters = psiClass.findMethodsByName("get" + methodSuffix, false);
+        PsiMethod[] getters = psiClass.findMethodsByName("get" + methodSuffix, useInherited);
         if (getters.length > 0) {
             return getters[0];
         }
