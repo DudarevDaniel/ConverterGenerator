@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>org.dudariev.converter.generator</id>
   <name>Converter Generator</name>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <vendor email="dudarev.daniel@gmail.com">Daniil Dudariev</vendor>
 
   <description><![CDATA[
@@ -27,7 +27,7 @@
     ]]></description>
 
   <change-notes><![CDATA[
-      Current version: 1.0.0
+      Added a checkbox 'Use inherited fields' to search for setters/getters in parent classes.
     ]]>
   </change-notes>
 

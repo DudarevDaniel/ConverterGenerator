@@ -15,6 +15,7 @@ import com.intellij.util.indexing.FileBasedIndex;
 import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.Nullable;
 
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
@@ -27,12 +28,13 @@ import static java.util.stream.Collectors.toList;
 public class GenerateConverterDialog extends DialogWrapper {
 
     private static final int WIDTH = 400;
-    private static final int HEIGHT = 100;
+    private static final int HEIGHT = 108;
 
     private JPanel dialog;
     private PsiClass psiClass;
     private TextFieldWithAutoCompletion<String> toField;
     private TextFieldWithAutoCompletion<String> fromField;
+    private JCheckBox inheritFields;
 
     public GenerateConverterDialog(PsiClass psiClass) {
         super(psiClass.getProject());
@@ -41,12 +43,14 @@ public class GenerateConverterDialog extends DialogWrapper {
         List<String> classNamesForAutocompletion = getClassNamesForAutocompletion();
         this.toField = createTextField(classNamesForAutocompletion);
         this.fromField = createTextField(classNamesForAutocompletion);
+        this.inheritFields = new JCheckBox("Use inherited fields");
 
         LabeledComponent<TextFieldWithAutoCompletion> convertToComponent = LabeledComponent.create(toField, "Convert To class");
         LabeledComponent<TextFieldWithAutoCompletion> convertFromComponent = LabeledComponent.create(fromField, "Convert From class");
 
         dialog.add(convertToComponent, BorderLayout.PAGE_START);
-        dialog.add(convertFromComponent, BorderLayout.PAGE_END);
+        dialog.add(convertFromComponent, BorderLayout.CENTER);
+        dialog.add(this.inheritFields, BorderLayout.PAGE_END);
 
         init();
     }
@@ -107,6 +111,10 @@ public class GenerateConverterDialog extends DialogWrapper {
 
     public PsiClass getConvertFromClass() {
         return extractPsiClass(this.fromField);
+    }
+
+    public boolean isInheritFields() {
+        return this.inheritFields.isSelected();
     }
 
     private PsiClass extractPsiClass(TextFieldWithAutoCompletion<String> textField) {
