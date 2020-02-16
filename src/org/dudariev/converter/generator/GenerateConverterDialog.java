@@ -1,7 +1,7 @@
 package org.dudariev.converter.generator;
 
-import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.openapi.fileEditor.impl.EditorHistoryManager;
+import com.intellij.openapi.fileTypes.StdFileTypes;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.LabeledComponent;
 import com.intellij.openapi.ui.ValidationInfo;
@@ -11,7 +11,6 @@ import com.intellij.psi.search.FileTypeIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.PsiShortNamesCache;
 import com.intellij.ui.TextFieldWithAutoCompletion;
-import com.intellij.util.indexing.FileBasedIndex;
 import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,8 +44,8 @@ public class GenerateConverterDialog extends DialogWrapper {
         this.fromField = createTextField(classNamesForAutocompletion);
         this.inheritFields = new JCheckBox("Use inherited fields");
 
-        LabeledComponent<TextFieldWithAutoCompletion> convertToComponent = LabeledComponent.create(toField, "Convert To class");
-        LabeledComponent<TextFieldWithAutoCompletion> convertFromComponent = LabeledComponent.create(fromField, "Convert From class");
+        LabeledComponent<TextFieldWithAutoCompletion<String>> convertToComponent = LabeledComponent.create(toField, "Convert To class");
+        LabeledComponent<TextFieldWithAutoCompletion<String>> convertFromComponent = LabeledComponent.create(fromField, "Convert From class");
 
         dialog.add(convertToComponent, BorderLayout.PAGE_START);
         dialog.add(convertFromComponent, BorderLayout.CENTER);
@@ -86,12 +85,8 @@ public class GenerateConverterDialog extends DialogWrapper {
                 .distinct()
                 .collect(toList());
 
-        List<String> projectFiles = FileBasedIndex.getInstance()
-                .getContainingFiles(
-                        FileTypeIndex.NAME,
-                        JavaFileType.INSTANCE,
-                        GlobalSearchScope.allScope(psiClass.getProject())
-                ).stream()
+        List<String> projectFiles = FileTypeIndex.getFiles(StdFileTypes.JAVA, GlobalSearchScope.allScope(psiClass.getProject()))
+                .stream()
                 .map(VirtualFile::getNameWithoutExtension)
                 .collect(toList());
 
