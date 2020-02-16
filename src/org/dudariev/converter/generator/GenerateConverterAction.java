@@ -1,6 +1,5 @@
 package org.dudariev.converter.generator;
 
-import com.intellij.lang.jvm.JvmModifier;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.LangDataKeys;
@@ -14,6 +13,7 @@ import com.intellij.psi.PsiElementFactory;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiModifier;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.codeStyle.CodeStyleSettings;
 import com.intellij.psi.codeStyle.CommonCodeStyleSettings;
@@ -27,7 +27,7 @@ import java.util.List;
 public class GenerateConverterAction extends AnAction {
 
     @Override
-    public void actionPerformed(AnActionEvent e) {
+    public void actionPerformed(@NotNull AnActionEvent e) {
         PsiClass psiClass = getPsiClassFromContext(e);
         if (psiClass == null) {
             return;
@@ -42,7 +42,7 @@ public class GenerateConverterAction extends AnAction {
     }
 
     @Override
-    public void update(AnActionEvent e) {
+    public void update(@NotNull AnActionEvent e) {
         PsiClass psiClass = getPsiClassFromContext(e);
         e.getPresentation().setEnabled(psiClass != null);
     }
@@ -59,14 +59,8 @@ public class GenerateConverterAction extends AnAction {
     }
 
     private void generateConvertAs(PsiClass to, PsiClass from, PsiClass psiClass, boolean useInherited) {
-        new WriteCommandAction.Simple(psiClass.getProject(), psiClass.getContainingFile()) {
-
-            @Override
-            protected void run() {
-                buildConvertMethod(to, from, psiClass, useInherited);
-            }
-
-        }.execute();
+        WriteCommandAction.writeCommandAction(psiClass.getProject())
+                .run(() -> buildConvertMethod(to, from, psiClass, useInherited));
     }
 
     private void buildConvertMethod(PsiClass to, PsiClass from, PsiClass psiClass, boolean useInherited) {
@@ -92,7 +86,7 @@ public class GenerateConverterAction extends AnAction {
     private void processToFields(PsiClass to, PsiClass from, FieldsMappingResult mappingResult, boolean useInherited) {
         for (PsiField toField : getFields(to, useInherited)) {
             String toFieldName = toField.getName();
-            if (toFieldName != null && !toField.hasModifier(JvmModifier.STATIC)) {
+            if (!toField.hasModifierProperty(PsiModifier.STATIC)) {
                 PsiMethod toSetter = findSetter(to, toFieldName, useInherited);
                 PsiMethod fromGetter = findGetter(from, toFieldName, useInherited);
                 if (toSetter != null && fromGetter != null && isMatchingFieldType(toField, fromGetter)) {
@@ -107,7 +101,7 @@ public class GenerateConverterAction extends AnAction {
     private void processFromFields(PsiClass from, FieldsMappingResult mappingResult, boolean useInherited) {
         for (PsiField fromField : getFields(from, useInherited)) {
             String fromFieldName = fromField.getName();
-            if (fromFieldName != null && !fromField.hasModifier(JvmModifier.STATIC)) {
+            if (!fromField.hasModifierProperty(PsiModifier.STATIC)) {
                 PsiMethod fromGetter = findGetter(from, fromFieldName, useInherited);
                 if (fromGetter == null || !mappingResult.getMappedFields().containsValue(fromGetter)) {
                     mappingResult.addNotMappedFromField(fromFieldName);
@@ -163,7 +157,8 @@ public class GenerateConverterAction extends AnAction {
     private PsiMethod findSetter(PsiClass psiClass, String fieldName, boolean useInherited) {
         PsiMethod[] setters = psiClass.findMethodsByName("set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1), useInherited);
         if (setters.length == 1) {
-            return setters[0];
+            PsiMethod setter = setters[0];
+            return setter.hasModifierProperty(PsiModifier.STATIC) ? null : setter;
         }
         return null;
     }
@@ -171,12 +166,15 @@ public class GenerateConverterAction extends AnAction {
     private PsiMethod findGetter(PsiClass psiClass, String fieldName, boolean useInherited) {
         String methodSuffix = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
         PsiMethod[] getters = psiClass.findMethodsByName("get" + methodSuffix, useInherited);
+        PsiMethod getter;
         if (getters.length > 0) {
-            return getters[0];
+            getter = getters[0];
+            return getter.hasModifierProperty(PsiModifier.STATIC) ? null : getter;
         }
         getters = psiClass.findMethodsByName("is" + methodSuffix, false);
         if (getters.length > 0) {
-            return getters[0];
+            getter = getters[0];
+            return getter.hasModifierProperty(PsiModifier.STATIC) ? null : getter;
         }
         return null;
     }
