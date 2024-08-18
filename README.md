@@ -1,4 +1,4 @@
-ConverterGenerator 1.0.0
+ConverterGenerator 1.3.0
 --------------------------
 
 Custom plugin for Intellij Idea for generating the converter method by matching setters and getters of given classes.

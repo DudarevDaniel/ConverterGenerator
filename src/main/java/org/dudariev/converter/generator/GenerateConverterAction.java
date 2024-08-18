@@ -1,13 +1,16 @@
 package org.dudariev.converter.generator;
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.LangDataKeys;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.command.WriteCommandAction;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiElementFactory;
 import com.intellij.psi.PsiField;
@@ -45,6 +48,11 @@ public class GenerateConverterAction extends AnAction {
     public void update(@NotNull AnActionEvent e) {
         PsiClass psiClass = getPsiClassFromContext(e);
         e.getPresentation().setEnabled(psiClass != null);
+    }
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.BGT;
     }
 
     private PsiClass getPsiClassFromContext(AnActionEvent e) {
@@ -180,7 +188,10 @@ public class GenerateConverterAction extends AnAction {
     }
 
     private String getProjectIndentation(PsiClass psiClass) {
-        CommonCodeStyleSettings.IndentOptions indentOptions = CodeStyleSettings.IndentOptions.retrieveFromAssociatedDocument(psiClass.getContainingFile());
+        Document document = PsiDocumentManager.getInstance(psiClass.getProject()).getDocument(psiClass.getContainingFile());
+        CommonCodeStyleSettings.IndentOptions indentOptions = document != null
+                ? CodeStyleSettings.IndentOptions.retrieveFromAssociatedDocument(document)
+                : null;
         String indentation = "        ";
         if (indentOptions != null) {
             if (indentOptions.USE_TAB_CHARACTER) {

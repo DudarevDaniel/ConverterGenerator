@@ -29,10 +29,16 @@ hs_err_pid*
 # User-specific stuff:
 .idea
 *.iml
+build
+.intellijPlatform
 
 # Gradle:
 .idea/**/gradle.xml
 .idea/**/libraries
+.gradle
+gradlew
+gradlew.bat
+gradle/
 
 # CMake
 cmake-build-debug/

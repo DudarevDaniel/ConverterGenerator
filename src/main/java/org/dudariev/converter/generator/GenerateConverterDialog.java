@@ -1,13 +1,9 @@
 package org.dudariev.converter.generator;
 
-import com.intellij.openapi.fileEditor.impl.EditorHistoryManager;
-import com.intellij.openapi.fileTypes.StdFileTypes;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.LabeledComponent;
 import com.intellij.openapi.ui.ValidationInfo;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiClass;
-import com.intellij.psi.search.FileTypeIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.PsiShortNamesCache;
 import com.intellij.ui.TextFieldWithAutoCompletion;
@@ -18,22 +14,20 @@ import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
 
 
 public class GenerateConverterDialog extends DialogWrapper {
 
     private static final int WIDTH = 400;
-    private static final int HEIGHT = 108;
+    private static final int HEIGHT = 120;
 
-    private JPanel dialog;
-    private PsiClass psiClass;
-    private TextFieldWithAutoCompletion<String> toField;
-    private TextFieldWithAutoCompletion<String> fromField;
-    private JCheckBox inheritFields;
+    private final JPanel dialog;
+    private final PsiClass psiClass;
+    private final TextFieldWithAutoCompletion<String> toField;
+    private final TextFieldWithAutoCompletion<String> fromField;
+    private final JCheckBox inheritFields;
 
     public GenerateConverterDialog(PsiClass psiClass) {
         super(psiClass.getProject());
@@ -80,18 +74,9 @@ public class GenerateConverterDialog extends DialogWrapper {
     }
 
     private List<String> getClassNamesForAutocompletion() {
-        List<String> history = Stream.of(EditorHistoryManager.getInstance(psiClass.getProject()).getFiles())
-                .map(VirtualFile::getNameWithoutExtension)
-                .distinct()
-                .collect(toList());
-
-        List<String> projectFiles = FileTypeIndex.getFiles(StdFileTypes.JAVA, GlobalSearchScope.allScope(psiClass.getProject()))
-                .stream()
-                .map(VirtualFile::getNameWithoutExtension)
-                .collect(toList());
-
-        history.addAll(projectFiles);
-        return history;
+        return Arrays.asList(
+                PsiShortNamesCache.getInstance(psiClass.getProject()).getAllClassNames()
+        );
     }
 
     private TextFieldWithAutoCompletion<String> createTextField(List<String> classNames) {
