@@ -16,10 +16,10 @@ public class FieldsMappingResult {
      * Key is a Setter method for To class field
      * Value is a Getter method for From class field
      */
-    private Map<PsiMethod, PsiMethod> mappedFields = new HashMap<>();
+    private final Map<PsiMethod, PsiMethod> mappedFields = new HashMap<>();
 
-    private List<String> notMappedToFields = new ArrayList<>();
-    private List<String> notMappedFromFields = new ArrayList<>();
+    private final List<String> notMappedToFields = new ArrayList<>();
+    private final List<String> notMappedFromFields = new ArrayList<>();
 
     public Map<PsiMethod, PsiMethod> getMappedFields() {
         return mappedFields;
