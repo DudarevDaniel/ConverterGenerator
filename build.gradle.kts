@@ -17,7 +17,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity("2023.3")
+        intellijIdeaCommunity("2024.2")
         bundledPlugin("com.intellij.java")
         instrumentationTools()
         pluginVerifier()
@@ -26,7 +26,11 @@ dependencies {
 
 intellijPlatform {
     pluginConfiguration {
-        version = "1.3.0"
+        version = "1.3.1"
+        ideaVersion {
+            sinceBuild = "242.20224"
+            untilBuild = provider { null }
+        }
     }
 
     pluginVerification {
